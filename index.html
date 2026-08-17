@@ -22,6 +22,7 @@ header p{font-size:12.5px;opacity:.85;margin-top:4px}
 .chips{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap}
 .chip{padding:7px 12px;border-radius:20px;border:1.5px solid #cbd5e1;font-size:12px;cursor:pointer;background:#fff;user-select:none;white-space:nowrap}
 .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.expbtn{padding:7px 14px;border-radius:20px;border:none;background:var(--navy);color:#fff;font-size:12px;cursor:pointer;white-space:nowrap;user-select:none}
 .summary{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
 .sbox{background:var(--card);border-radius:10px;padding:10px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:12px;color:var(--mut)}
 .sbox strong{display:block;font-size:19px;color:var(--txt)}
@@ -78,6 +79,7 @@ footer{margin-top:18px;text-align:center;font-size:11px;color:var(--mut)}
     <span class="chip" data-k="fpr">Oport. Preço</span>
     <span class="chip" data-k="man">Questionar Manutenção</span>
   </div>
+  <div class="fg"><label>&nbsp;</label><span class="expbtn" id="fexport">⬇ Exportar Excel</span></div>
 </div>
 
 <div class="summary">
@@ -206,6 +208,31 @@ document.querySelectorAll(".chip").forEach(ch => ch.addEventListener("click", ()
   const k = ch.dataset.k; chips[k] = !chips[k]; ch.classList.toggle("on", chips[k]); shown = PAGE; render();
 }));
 el("more").addEventListener("click", () => { shown += PAGE; render(); });
+
+// ---------- exportar excel (csv) ----------
+function csvCampo(v){
+  const s = (v===null||v===undefined) ? '' : String(v);
+  return '"' + s.replace(/"/g,'""') + '"';
+}
+function simNao(b){ return b ? 'Sim' : 'Não'; }
+function exportarCSV(){
+  const list = filtered();
+  const cab = ['Trader','Supervisor','Promotor','Código PDV','Loja','UF','Rede','Quadrante','Nota atual','Nota potencial','Ganho (pts)','Última visita',
+    'Oport. Share','Mensagem Share','Oport. Ponto Extra','Mensagem Ponto Extra','Oport. Mix','Mensagem Mix','Oport. Preço','Mensagem Preço','Questionar Manutenção','Mensagem Manutenção'];
+  const linhas = list.map(d => [
+    d.t, d.s, d.p, d.c, d.l, d.uf, d.rd, d.q, fmt(d.n), fmt(d.nf), fmt(d.g,2), d.dv,
+    simNao(d.fsh), d.msh||'', simNao(d.fpe), d.mpe||'', simNao(d.fmx), d.mmx||'', simNao(d.fpr), d.mpr||'', simNao(d.man), d.mman||''
+  ].map(csvCampo).join(';'));
+  const csv = '﻿' + cab.map(csvCampo).join(';') + '\r\n' + linhas.join('\r\n');
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Plano_de_Acao_LP.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+el("fexport").addEventListener("click", exportarCSV);
 
 fillSel("f-t", uniq(DATA.map(d=>d.t)));
 cascade();
